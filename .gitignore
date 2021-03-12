@@ -30,6 +30,8 @@
 cmake-build-debug/
 
 #other stuff (windows stuff, qt moc stuff, etc)
+build/
+dependencies2019/
 Release_MD/
 Release/
 Debug/
