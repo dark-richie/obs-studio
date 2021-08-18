@@ -22,6 +22,10 @@ env:
   TWITCH_HASH: ${{ secrets.TWITCH_HASH }}
   RESTREAM_CLIENTID: ${{ secrets.RESTREAM_CLIENTID }}
   RESTREAM_HASH: ${{ secrets.RESTREAM_HASH }}
+  YOUTUBE_CLIENTID: ${{ secrets.YOUTUBE_CLIENTID }}
+  YOUTUBE_CLIENTID_HASH: ${{ secrets.YOUTUBE_CLIENTID_HASH }}
+  YOUTUBE_SECRET: ${{ secrets.YOUTUBE_SECRET }}
+  YOUTUBE_SECRET_HASH: ${{ secrets.YOUTUBE_SECRET_HASH }}
 
 jobs:
   macos64:
@@ -29,12 +33,17 @@ jobs:
     runs-on: [macos-latest]
     env:
       MIN_MACOS_VERSION: '10.13'
-      MACOS_DEPS_VERSION: '2021-02-28'
+      MACOS_DEPS_VERSION: '2021-03-25'
       VLC_VERSION: '3.0.8'
       SPARKLE_VERSION: '1.23.0'
       QT_VERSION: '5.15.2'
       SIGN_IDENTITY: ''
+      HAVE_CODESIGN_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY != '' && secrets.MACOS_SIGNING_CERT != '' }}
     steps:
+      - name: Get Current Arch
+        shell: bash
+        id: get_arch
+        run: echo "CURRENT_ARCH=$(uname -m)" >> $GITHUB_ENV
       - name: 'Checkout'
         uses: actions/checkout@v2.3.3
         with:
@@ -102,14 +111,14 @@ jobs:
         if: steps.deps-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
-          curl -L -O https://github.com/obsproject/obs-deps/releases/download/${{ env.MACOS_DEPS_VERSION }}/macos-deps-${{ env.MACOS_DEPS_VERSION }}.tar.gz
-          tar -xf ./macos-deps-${{ env.MACOS_DEPS_VERSION }}.tar.gz -C "/tmp"
+          curl -L -O https://github.com/obsproject/obs-deps/releases/download/${{ env.MACOS_DEPS_VERSION }}/macos-deps-${{ env.CURRENT_ARCH }}-${{ env.MACOS_DEPS_VERSION }}.tar.gz
+          tar -xf ./macos-deps-${{ env.CURRENT_ARCH }}-${{ env.MACOS_DEPS_VERSION }}.tar.gz -C "/tmp"
       - name: 'Install prerequisite: Pre-built dependency Qt'
         if: steps.deps-qt-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
-          curl -L -O https://github.com/obsproject/obs-deps/releases/download/${{ env.MACOS_DEPS_VERSION }}/macos-qt-${{ env.QT_VERSION }}-${{ env.MACOS_DEPS_VERSION }}.tar.gz
-          tar -xf ./macos-qt-${{ env.QT_VERSION }}-${{ env.MACOS_DEPS_VERSION }}.tar.gz -C "/tmp"
+          curl -L -O https://github.com/obsproject/obs-deps/releases/download/${{ env.MACOS_DEPS_VERSION }}/macos-qt-${{ env.QT_VERSION }}-${{ env.CURRENT_ARCH }}-${{ env.MACOS_DEPS_VERSION }}.tar.gz
+          tar -xf ./macos-qt-${{ env.QT_VERSION }}-${{ env.CURRENT_ARCH }}-${{ env.MACOS_DEPS_VERSION }}.tar.gz -C "/tmp"
           xattr -r -d com.apple.quarantine /tmp/obsdeps
       - name: 'Install prerequisite: VLC'
         if: steps.vlc-cache.outputs.cache-hit != 'true'
@@ -161,15 +170,15 @@ jobs:
         if: success() && (github.event_name != 'pull_request' || env.SEEKING_TESTERS == '1')
         shell: bash
         run: |
-          pip3 install dmgbuild
+          pip3 install dmgbuild==1.5.2
       - name: 'Install Apple Developer Certificate'
-        if: success() && startsWith(github.ref, 'refs/tags/') && github.event_name != 'pull_request'
+        if: success() && startsWith(github.ref, 'refs/tags/') && github.event_name != 'pull_request' && env.HAVE_CODESIGN_IDENTITY == 'true'
         uses: apple-actions/import-codesign-certs@253ddeeac23f2bdad1646faac5c8c2832e800071
         with:
           p12-file-base64: ${{ secrets.MACOS_SIGNING_CERT }}
           p12-password: ${{ secrets.MACOS_SIGNING_CERT_PASSWORD }}
       - name: 'Set Signing Identity'
-        if: success() && startsWith(github.ref, 'refs/tags/') && github.event_name != 'pull_request'
+        if: success() && startsWith(github.ref, 'refs/tags/') && github.event_name != 'pull_request' && env.HAVE_CODESIGN_IDENTITY == 'true'
         run: |
           echo "SIGN_IDENTITY=${{ secrets.MACOS_SIGNING_IDENTITY }}" >> $GITHUB_ENV
       - name: 'Create macOS application bundle'
@@ -247,14 +256,6 @@ jobs:
 
           mv ./libobs-opengl/libobs-opengl.so ./OBS.app/Contents/Frameworks
 
-          cp -R /tmp/obsdeps/lib/QtNetwork.framework ./OBS.app/Contents/Frameworks
-          chmod -R +w ./OBS.app/Contents/Frameworks/QtNetwork.framework
-          rm -r ./OBS.app/Contents/Frameworks/QtNetwork.framework/Headers
-          rm -r ./OBS.app/Contents/Frameworks/QtNetwork.framework/Versions/5/Headers/
-          chmod 644 ./OBS.app/Contents/Frameworks/QtNetwork.framework/Versions/5/Resources/Info.plist
-          install_name_tool -id @executable_path/../Frameworks/QtNetwork.framework/Versions/5/QtNetwork ./OBS.app/Contents/Frameworks/QtNetwork.framework/Versions/5/QtNetwork
-          install_name_tool -change /tmp/obsdeps/lib/QtCore.framework/Versions/5/QtCore @executable_path/../Frameworks/QtCore.framework/Versions/5/QtCore ./OBS.app/Contents/Frameworks/QtNetwork.framework/Versions/5/QtNetwork
-
           cp -R "${{ github.workspace }}/cmbuild/cef_binary_${{ env.MACOS_CEF_BUILD_VERSION }}_macosx64/Release/Chromium Embedded Framework.framework" ./OBS.app/Contents/Frameworks/
           chown -R $(whoami) ./OBS.app/Contents/Frameworks/
 
@@ -291,7 +292,7 @@ jobs:
             codesign --force --options runtime --entitlements "../CI/scripts/macos/helpers/helper-renderer-entitlements.plist" --sign "${SIGN_IDENTITY:--}" --deep "./OBS.app/Contents/Frameworks/OBS Helper (Renderer).app"
           fi
 
-          codesign --force --options runtime --deep --sign "${SIGN_IDENTITY:--}" "./OBS.app/Contents/Resources/data/obs-mac-virtualcam.plugin"
+          codesign --force --options runtime --deep --sign "${SIGN_IDENTITY:--}" "./OBS.app/Contents/Resources/data/obs-plugins/mac-virtualcam/obs-mac-virtualcam.plugin"
 
           codesign --force --options runtime --entitlements "../CI/scripts/macos/app/entitlements.plist" --sign "${SIGN_IDENTITY:--}" --deep ./OBS.app
 
@@ -322,7 +323,7 @@ jobs:
           name: '${{ env.FILE_NAME }}'
           path: ./nightly/*.dmg
       - name: 'Package Release'
-        if: success() && startsWith(github.ref, 'refs/tags/') && github.event_name != 'pull_request'
+        if: success() && startsWith(github.ref, 'refs/tags/') && github.event_name != 'pull_request' && env.HAVE_CODESIGN_IDENTITY == 'true'
         working-directory: ${{ github.workspace }}/build
         shell: bash
         run: |
@@ -344,7 +345,7 @@ jobs:
           mkdir ../release
           sudo mv ./$FILE_NAME ../release/$RELEASE_FILE_NAME
       - name: 'Publish Release'
-        if: success() && startsWith(github.ref, 'refs/tags/') && github.event_name != 'pull_request'
+        if: success() && startsWith(github.ref, 'refs/tags/') && github.event_name != 'pull_request' && env.HAVE_CODESIGN_IDENTITY == 'true'
         uses: actions/upload-artifact@v2.2.0
         with:
           name: '${{ env.RELEASE_FILE_NAME }}'
@@ -421,9 +422,7 @@ jobs:
            qtbase5-private-dev \
            libqt5svg5-dev \
            swig \
-           libcmocka-dev \
-           linux-generic \
-           v4l2loopback-dkms
+           libcmocka-dev
       - name: 'Restore Chromium Embedded Framework from cache'
         id: cef-cache
         uses: actions/cache@v2.1.2
@@ -444,7 +443,7 @@ jobs:
         run: |
           mkdir ./build
           cd ./build
-          cmake -DUNIX_STRUCTURE=0 -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/obs-studio-portable" -DENABLE_UNIT_TESTS=ON -DENABLE_VLC=ON -DWITH_RTMPS=ON -DBUILD_BROWSER=ON -DCEF_ROOT_DIR="${{ github.workspace }}/cmbuild/cef_binary_${{ env.LINUX_CEF_BUILD_VERSION }}_linux64" -DTWITCH_CLIENTID='${{ env.TWITCH_CLIENTID }}' -DTWITCH_HASH='${{ env.TWITCH_HASH }}' -DRESTREAM_CLIENTID='${{ env.RESTREAM_CLIENTID }}' -DRESTREAM_HASH='${{ env.RESTREAM_HASH }}' ..
+          cmake -DENABLE_PIPEWIRE=OFF -DUNIX_STRUCTURE=0 -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/obs-studio-portable" -DENABLE_UNIT_TESTS=ON -DENABLE_VLC=ON -DWITH_RTMPS=ON -DBUILD_BROWSER=ON -DCEF_ROOT_DIR="${{ github.workspace }}/cmbuild/cef_binary_${{ env.LINUX_CEF_BUILD_VERSION }}_linux64" -DTWITCH_CLIENTID='${{ env.TWITCH_CLIENTID }}' -DTWITCH_HASH='${{ env.TWITCH_HASH }}' -DRESTREAM_CLIENTID='${{ env.RESTREAM_CLIENTID }}' -DRESTREAM_HASH='${{ env.RESTREAM_HASH }}' ..
       - name: 'Build'
         shell: bash
         working-directory: ${{ github.workspace }}/build
@@ -480,6 +479,7 @@ jobs:
       CMAKE_GENERATOR: "Visual Studio 16 2019"
       CMAKE_SYSTEM_VERSION: "10.0.18363.657"
       WINDOWS_DEPS_VERSION: '2019'
+      WINDOWS_DEPS_CACHE_VERSION: '1'
       VLC_VERSION: '3.0.0-git'
       VIRTUALCAM-GUID: "A3FCE0F5-3493-419F-958A-ABA1250EC20B"
     steps:
@@ -522,7 +522,7 @@ jobs:
           CACHE_NAME: 'windows-deps-cache'
         with:
           path: ${{ github.workspace }}/cmbuild/deps
-          key: ${{ runner.os }}-pr-${{ env.CACHE_NAME }}-${{ env.WINDOWS_DEPS_VERSION }}
+          key: ${{ runner.os }}-pr-${{ env.CACHE_NAME }}-${{ env.WINDOWS_DEPS_VERSION }}-${{ env.WINDOWS_DEPS_CACHE_VERSION }}
       - name: 'Restore VLC dependency from cache'
         id: vlc-cache
         uses: actions/cache@v2.1.2
@@ -589,6 +589,7 @@ jobs:
       CMAKE_GENERATOR: "Visual Studio 16 2019"
       CMAKE_SYSTEM_VERSION: "10.0.18363.657"
       WINDOWS_DEPS_VERSION: '2019'
+      WINDOWS_DEPS_CACHE_VERSION: '1'
       VIRTUALCAM-GUID: "A3FCE0F5-3493-419F-958A-ABA1250EC20B"
     steps:
       - name: 'Add msbuild to PATH'
@@ -630,7 +631,7 @@ jobs:
           CACHE_NAME: 'deps-cache'
         with:
           path: ${{ github.workspace }}/cmbuild/deps
-          key: ${{ runner.os }}-pr-${{ env.CACHE_NAME }}-${{ env.WINDOWS_DEPS_VERSION }}
+          key: ${{ runner.os }}-pr-${{ env.CACHE_NAME }}-${{ env.WINDOWS_DEPS_VERSION }}-${{ env.WINDOWS_DEPS_CACHE_VERSION }}
       - name: 'Restore VLC dependency from cache'
         id: vlc-cache
         uses: actions/cache@v2.1.2
