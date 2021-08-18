@@ -226,7 +226,8 @@ elseif(UNIX)
 	endif()
 	if(GIO_FOUND)
 		set(libobs_PLATFORM_SOURCES ${libobs_PLATFORM_SOURCES}
-			util/platform-nix-dbus.c)
+			util/platform-nix-dbus.c
+			util/platform-nix-portal.c)
 		include_directories(${GIO_INCLUDE_DIRS})
 		add_definitions(
 			${GIO_DEFINITIONS})
@@ -334,6 +335,7 @@ set(libobs_graphics_HEADERS
 	graphics/libnsgif/libnsgif.h
 	graphics/device-exports.h
 	graphics/image-file.h
+	graphics/srgb.h
 	graphics/vec2.h
 	graphics/vec4.h
 	graphics/matrix3.h
@@ -536,9 +538,6 @@ target_compile_options(libobs
 	PUBLIC
 	${ARCH_SIMD_FLAGS})
 
-target_compile_options(libobs
-	PUBLIC
-		"${THREADS_DEFINITIONS}")
 target_include_directories(libobs
 	PUBLIC
 		"$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
@@ -551,8 +550,7 @@ target_link_libraries(libobs
 		${OBS_JANSSON_IMPORT}
 		${FFMPEG_LIBRARIES}
 		${ZLIB_LIBRARIES}
-	PUBLIC
-		${THREADS_LIBRARIES})
+		Threads::Threads)
 
 install_obs_core(libobs EXPORT LibObs)
 install_obs_data(libobs data libobs)

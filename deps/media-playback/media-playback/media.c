@@ -420,6 +420,7 @@ static void mp_media_next_video(mp_media_t *m, bool preload)
 	frame->width = f->width;
 	frame->height = f->height;
 	frame->flip = flip;
+	frame->flags |= m->is_linear_alpha ? OBS_SOURCE_FRAME_LINEAR_ALPHA : 0;
 
 	if (!m->is_local_file && !d->got_first_keyframe) {
 		if (!f->key_frame)
@@ -500,14 +501,14 @@ static bool mp_media_reset(mp_media_t *m)
 	bool stopping;
 	bool active;
 
-	seek_to(m, m->fmt->start_time);
-
 	int64_t next_ts = mp_media_get_base_pts(m);
 	int64_t offset = next_ts - m->next_pts_ns;
 
 	m->eof = false;
 	m->base_ts += next_ts;
 	m->seek_next_ts = false;
+
+	seek_to(m, m->fmt->start_time);
 
 	pthread_mutex_lock(&m->mutex);
 	stopping = m->stopping;
@@ -539,21 +540,22 @@ static bool mp_media_reset(mp_media_t *m)
 	return true;
 }
 
-static inline bool mp_media_sleepto(mp_media_t *m)
+static inline bool mp_media_sleep(mp_media_t *m)
 {
 	bool timeout = false;
 
 	if (!m->next_ns) {
 		m->next_ns = os_gettime_ns();
 	} else {
-		uint64_t t = os_gettime_ns();
-		const uint64_t timeout_ns = 200000000;
-
-		if (m->next_ns > t && (m->next_ns - t) > timeout_ns) {
-			os_sleepto_ns(t + timeout_ns);
-			timeout = true;
-		} else {
-			os_sleepto_ns(m->next_ns);
+		const uint64_t t = os_gettime_ns();
+		if (m->next_ns > t) {
+			const uint32_t delta_ms =
+				(uint32_t)((m->next_ns - t + 500000) / 1000000);
+			if (delta_ms > 0) {
+				static const uint32_t timeout_ms = 200;
+				timeout = delta_ms > timeout_ms;
+				os_sleep_ms(timeout ? timeout_ms : delta_ms);
+			}
 		}
 	}
 
@@ -694,7 +696,7 @@ static inline bool mp_media_thread(mp_media_t *m)
 			if (pause)
 				reset_ts(m);
 		} else {
-			timeout = mp_media_sleepto(m);
+			timeout = mp_media_sleep(m);
 		}
 
 		pthread_mutex_lock(&m->mutex);
@@ -803,6 +805,7 @@ bool mp_media_init(mp_media_t *media, const struct mp_media_info *info)
 	media->v_seek_cb = info->v_seek_cb;
 	media->v_preload_cb = info->v_preload_cb;
 	media->force_range = info->force_range;
+	media->is_linear_alpha = info->is_linear_alpha;
 	media->buffering = info->buffering;
 	media->speed = info->speed;
 	media->is_local_file = info->is_local_file;

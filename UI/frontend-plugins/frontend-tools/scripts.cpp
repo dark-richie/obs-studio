@@ -504,8 +504,8 @@ void ScriptsTool::on_scripts_currentRowChanged(int row)
 
 	propertiesView = new OBSPropertiesView(
 		settings, script,
-		(PropertiesReloadCallback)obs_script_get_properties,
-		(PropertiesUpdateCallback)obs_script_update);
+		(PropertiesReloadCallback)obs_script_get_properties, nullptr,
+		(PropertiesVisualUpdateCb)obs_script_update);
 	ui->propertiesLayout->addWidget(propertiesView);
 	ui->description->setText(obs_script_get_description(script));
 }
@@ -568,9 +568,15 @@ static void obs_event(enum obs_frontend_event event, void *)
 		delete scriptsWindow;
 		delete scriptLogWindow;
 
+		scriptData = nullptr;
+		scriptsWindow = nullptr;
+		scriptLogWindow = nullptr;
+
 	} else if (event == OBS_FRONTEND_EVENT_SCENE_COLLECTION_CLEANUP) {
-		scriptLogWindow->hide();
-		scriptLogWindow->Clear();
+		if (scriptLogWindow) {
+			scriptLogWindow->hide();
+			scriptLogWindow->Clear();
+		}
 
 		delete scriptData;
 		scriptData = new ScriptData;

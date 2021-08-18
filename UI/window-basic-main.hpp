@@ -19,6 +19,7 @@
 
 #include <QBuffer>
 #include <QAction>
+#include <QThread>
 #include <QWidgetAction>
 #include <QSystemTrayIcon>
 #include <QStyledItemDelegate>
@@ -36,6 +37,7 @@
 #include "window-basic-about.hpp"
 #include "auth-base.hpp"
 #include "log-viewer.hpp"
+#include "undo-stack-obs.hpp"
 
 #include <obs-frontend-internal.hpp>
 
@@ -156,6 +158,7 @@ class OBSBasic : public OBSMainWindow {
 	friend class OBSBasicPreview;
 	friend class OBSBasicStatusBar;
 	friend class OBSBasicSourceSelect;
+	friend class OBSBasicTransform;
 	friend class OBSBasicSettings;
 	friend class Auth;
 	friend class AutoConfig;
@@ -166,6 +169,7 @@ class OBSBasic : public OBSMainWindow {
 	friend class ExtraBrowsersDelegate;
 	friend class DeviceCaptureToolbar;
 	friend class DeviceToolbarPropertiesThread;
+	friend class OBSBasicSourceSelect;
 	friend struct BasicOutputHandler;
 	friend struct OBSStudioAPI;
 
@@ -214,11 +218,15 @@ private:
 	QPointer<OBSBasicFilters> filters;
 	QPointer<QDockWidget> statsDock;
 	QPointer<OBSAbout> about;
+	QPointer<OBSMissingFiles> missDialog;
 
 	OBSLogViewer *logView = nullptr;
 
 	QPointer<QTimer> cpuUsageTimer;
 	QPointer<QTimer> diskFullTimer;
+
+	QPointer<QTimer> nudge_timer;
+	bool recent_nudge = false;
 
 	os_cpu_usage_info_t *cpuUsageInfo = nullptr;
 
@@ -308,6 +316,7 @@ private:
 	void UploadLog(const char *subdir, const char *file, const bool crash);
 
 	void Save(const char *file);
+	void LoadData(obs_data_t *data, const char *file);
 	void Load(const char *file);
 
 	void InitHotkeys();
@@ -369,10 +378,11 @@ private:
 	void ChangeSceneCollection();
 	void LogScenes();
 
-	void LoadProfile();
 	void ResetProfileData();
 	bool AddProfile(bool create_new, const char *title, const char *text,
 			const char *init_text = nullptr, bool rename = false);
+	bool CreateProfile(const std::string &newName, bool create_new,
+			   bool showWizardChecked, bool rename = false);
 	void DeleteProfile(const char *profile_name, const char *profile_dir);
 	void RefreshProfiles();
 	void ChangeProfile();
@@ -394,7 +404,8 @@ private:
 	obs_source_t *FindTransition(const char *name);
 	OBSSource GetCurrentTransition();
 	obs_data_array_t *SaveTransitions();
-	void LoadTransitions(obs_data_array_t *transitions);
+	void LoadTransitions(obs_data_array_t *transitions,
+			     obs_load_source_cb cb, void *private_data);
 
 	obs_source_t *fadeTransition;
 	obs_source_t *cutTransition;
@@ -479,8 +490,6 @@ private:
 	QList<QDialog *> modalDialogs;
 	QList<QMessageBox *> visMsgBoxes;
 
-	OBSMissingFiles *missDialog;
-
 	QList<QPoint> visDlgPositions;
 
 	QByteArray startingDockLayout;
@@ -546,6 +555,21 @@ private:
 
 	QPointer<QObject> screenshotData;
 
+	void MoveSceneItem(enum obs_order_movement movement,
+			   const QString &action_name);
+
+	bool autoStartBroadcast = true;
+	bool autoStopBroadcast = true;
+	bool broadcastActive = false;
+	QPointer<QThread> youtubeStreamCheckThread;
+#if YOUTUBE_ENABLED
+	void YoutubeStreamCheck(const std::string &key);
+	void ShowYouTubeAutoStartWarning();
+	void YouTubeActionDialogOk(const QString &id, const QString &key,
+				   bool autostart, bool autostop);
+#endif
+	void BroadcastButtonClicked();
+
 public slots:
 	void DeferSaveBegin();
 	void DeferSaveEnd();
@@ -601,6 +625,10 @@ public slots:
 	bool AddSceneCollection(bool create_new,
 				const QString &name = QString());
 
+	bool NewProfile(const QString &name);
+	bool DuplicateProfile(const QString &name);
+	void DeleteProfile(const QString &profileName);
+
 	void UpdatePatronJson(const QString &text, const QString &error);
 
 	void ShowContextBar();
@@ -609,6 +637,10 @@ public slots:
 	void UnpauseRecording();
 
 private slots:
+
+	void on_actionMainUndo_triggered();
+	void on_actionMainRedo_triggered();
+
 	void AddSceneItem(OBSSceneItem item);
 	void AddScene(OBSSource source);
 	void RemoveScene(OBSSource source);
@@ -727,7 +759,7 @@ private:
 
 	static void HotkeyTriggered(void *data, obs_hotkey_id id, bool pressed);
 
-	void AutoRemux();
+	void AutoRemux(QString input);
 
 	void UpdatePause(bool activate = true);
 	void UpdateReplayBuffer(bool activate = true);
@@ -741,6 +773,7 @@ private:
 	OBSSource prevFTBSource = nullptr;
 
 public:
+	undo_stack undo_s;
 	OBSSource GetProgramSource();
 	OBSScene GetCurrentScene();
 
@@ -845,6 +878,27 @@ public:
 
 	OBSWeakSource copyFilter = nullptr;
 
+	void ShowStatusBarMessage(const QString &message);
+
+	static OBSData
+	BackupScene(obs_scene_t *scene,
+		    std::vector<obs_source_t *> *sources = nullptr);
+	void CreateSceneUndoRedoAction(const QString &action_name,
+				       OBSData undo_data, OBSData redo_data);
+
+	static inline OBSData
+	BackupScene(obs_source_t *scene_source,
+		    std::vector<obs_source_t *> *sources = nullptr)
+	{
+		obs_scene_t *scene = obs_scene_from_source(scene_source);
+		return BackupScene(scene, sources);
+	}
+
+	void CreateFilterPasteUndoRedoAction(const QString &text,
+					     obs_source_t *source,
+					     obs_data_array_t *undo_array,
+					     obs_data_array_t *redo_array);
+
 protected:
 	virtual void closeEvent(QCloseEvent *event) override;
 	virtual void changeEvent(QEvent *event) override;
@@ -855,6 +909,7 @@ private slots:
 	void on_actionShow_Recordings_triggered();
 	void on_actionRemux_triggered();
 	void on_action_Settings_triggered();
+	void on_actionShowMissingFiles_triggered();
 	void on_actionAdvAudioProperties_triggered();
 	void AdvAudioPropsClicked();
 	void AdvAudioPropsDestroyed();
@@ -939,7 +994,7 @@ private slots:
 	void on_actionNewProfile_triggered();
 	void on_actionDupProfile_triggered();
 	void on_actionRenameProfile_triggered();
-	void on_actionRemoveProfile_triggered();
+	void on_actionRemoveProfile_triggered(bool skipConfirmation = false);
 	void on_actionImportProfile_triggered();
 	void on_actionExportProfile_triggered();
 
@@ -995,7 +1050,8 @@ private slots:
 			     QAbstractItemDelegate::EndEditHint endHint);
 
 	void OpenSceneFilters();
-	void OpenFilters();
+	void OpenFilters(OBSSource source = nullptr);
+	void OpenProperties(OBSSource source = nullptr);
 
 	void EnablePreviewDisplay(bool enable);
 	void TogglePreview();

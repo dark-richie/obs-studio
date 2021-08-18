@@ -597,6 +597,16 @@ static bool obs_init_audio(struct audio_output_info *ai)
 	return false;
 }
 
+static void stop_audio(void)
+{
+	struct obs_core_audio *audio = &obs->audio;
+
+	if (audio->audio) {
+		audio_output_close(audio->audio);
+		audio->audio = NULL;
+	}
+}
+
 static void obs_free_audio(void)
 {
 	struct obs_core_audio *audio = &obs->audio;
@@ -1026,6 +1036,7 @@ void obs_shutdown(void)
 	da_free(obs->transition_types);
 
 	stop_video();
+	stop_audio();
 	stop_hotkeys();
 
 	module = obs->first_module;
@@ -1036,8 +1047,8 @@ void obs_shutdown(void)
 	}
 	obs->first_module = NULL;
 
-	obs_free_audio();
 	obs_free_data();
+	obs_free_audio();
 	obs_free_video();
 	obs_free_hotkeys();
 	obs_free_graphics();
@@ -1526,6 +1537,13 @@ static inline void obs_enum(void *pstart, pthread_mutex_t *mutex, void *proc,
 	pthread_mutex_unlock(mutex);
 }
 
+void obs_enum_all_sources(bool (*enum_proc)(void *, obs_source_t *),
+			  void *param)
+{
+	obs_enum(&obs->data.first_source, &obs->data.sources_mutex, enum_proc,
+		 param);
+}
+
 void obs_enum_outputs(bool (*enum_proc)(void *, obs_output_t *), void *param)
 {
 	obs_enum(&obs->data.first_output, &obs->data.outputs_mutex, enum_proc,
@@ -1904,12 +1922,7 @@ void obs_load_sources(obs_data_array_t *array, obs_load_source_cb cb,
 		if (source) {
 			if (source->info.type == OBS_SOURCE_TYPE_TRANSITION)
 				obs_transition_load(source, source_data);
-			obs_source_load(source);
-			for (size_t i = source->filters.num; i > 0; i--) {
-				obs_source_t *filter =
-					source->filters.array[i - 1];
-				obs_source_load(filter);
-			}
+			obs_source_load2(source);
 			if (cb)
 				cb(private_data, source);
 		}
@@ -2023,7 +2036,7 @@ obs_data_array_t *obs_save_sources_filtered(obs_save_source_filter_cb cb,
 	while (source) {
 		if ((source->info.type != OBS_SOURCE_TYPE_FILTER) != 0 &&
 		    !source->context.private && !source->removed &&
-		    cb(data_, source)) {
+		    !source->temp_removed && cb(data_, source)) {
 			obs_data_t *source_data = obs_save_source(source);
 
 			obs_data_array_push_back(array, source_data);
@@ -2244,6 +2257,15 @@ void *obs_obj_get_data(void *obj)
 	return context->data;
 }
 
+bool obs_obj_is_private(void *obj)
+{
+	struct obs_context_data *context = obj;
+	if (!context)
+		return false;
+
+	return context->private;
+}
+
 bool obs_set_audio_monitoring_device(const char *name, const char *id)
 {
 	if (!name || !id || !*name || !*id)
@@ -2257,10 +2279,8 @@ bool obs_set_audio_monitoring_device(const char *name, const char *id)
 		return true;
 	}
 
-	if (obs->audio.monitoring_device_name)
-		bfree(obs->audio.monitoring_device_name);
-	if (obs->audio.monitoring_device_id)
-		bfree(obs->audio.monitoring_device_id);
+	bfree(obs->audio.monitoring_device_name);
+	bfree(obs->audio.monitoring_device_id);
 
 	obs->audio.monitoring_device_name = bstrdup(name);
 	obs->audio.monitoring_device_id = bstrdup(id);

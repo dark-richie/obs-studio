@@ -61,7 +61,7 @@
          <number>2</number>
         </property>
         <item>
-         <widget class="QWidget" name="previewDisabledWidget">
+         <widget class="QFrame" name="previewDisabledWidget">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
             <horstretch>0</horstretch>
@@ -196,7 +196,7 @@
      </layout>
     </item>
     <item>
-     <widget class="QWidget" name="contextContainer">
+     <widget class="QFrame" name="contextContainer">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
         <horstretch>0</horstretch>
@@ -206,12 +206,6 @@
       <property name="minimumSize">
        <size>
         <width>0</width>
-        <height>30</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>16777215</width>
         <height>30</height>
        </size>
       </property>
@@ -235,7 +229,7 @@
         <number>4</number>
        </property>
        <item>
-        <widget class="QWidget" name="contextSubContainer">
+        <widget class="QFrame" name="contextSubContainer">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
            <horstretch>0</horstretch>
@@ -264,6 +258,31 @@
           <property name="bottomMargin">
            <number>0</number>
           </property>
+          <item>
+           <widget class="QLabel" name="contextSourceIcon">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>22</width>
+              <height>22</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>22</width>
+              <height>22</height>
+             </size>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
           <item>
            <widget class="QLabel" name="contextSourceLabel">
             <property name="sizePolicy">
@@ -310,12 +329,6 @@
               <height>22</height>
              </size>
             </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>22</height>
-             </size>
-            </property>
             <property name="toolTip">
              <string>Properties</string>
             </property>
@@ -339,12 +352,6 @@
             <property name="minimumSize">
              <size>
               <width>0</width>
-              <height>22</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
               <height>22</height>
              </size>
             </property>
@@ -374,12 +381,6 @@
               <height>22</height>
              </size>
             </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>22</height>
-             </size>
-            </property>
             <property name="text">
              <string>Interact</string>
             </property>
@@ -406,9 +407,9 @@
         </widget>
        </item>
        <item>
-        <widget class="QWidget" name="emptySpace">
+        <widget class="QFrame" name="emptySpace">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+          <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
@@ -416,12 +417,6 @@
          <property name="minimumSize">
           <size>
            <width>0</width>
-           <height>22</height>
-          </size>
-         </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
            <height>22</height>
           </size>
          </property>
@@ -586,6 +581,9 @@
       <string>Paste.Filters</string>
      </property>
     </action>
+    <addaction name="actionMainUndo"/>
+    <addaction name="actionMainRedo"/>
+    <addaction name="separator"/>
     <addaction name="actionCopySource"/>
     <addaction name="actionPasteRef"/>
     <addaction name="actionPasteDup"/>
@@ -599,6 +597,7 @@
     <addaction name="actionLockPreview"/>
     <addaction name="separator"/>
     <addaction name="actionAdvAudioProperties"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="profileMenu">
     <property name="title">
@@ -622,6 +621,8 @@
     <addaction name="actionRemoveSceneCollection"/>
     <addaction name="actionImportSceneCollection"/>
     <addaction name="actionExportSceneCollection"/>
+    <addaction name="separator"/>
+    <addaction name="actionShowMissingFiles"/>
     <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="viewMenu">
@@ -1112,7 +1113,7 @@
       <number>4</number>
      </property>
      <item>
-      <widget class="QWidget" name="transitionsContainer">
+      <widget class="QFrame" name="transitionsContainer">
        <layout class="QVBoxLayout" name="verticalLayout_2">
         <property name="spacing">
          <number>2</number>
@@ -1214,10 +1215,10 @@
              <string> ms</string>
             </property>
             <property name="minimum">
-             <number>2</number>
+             <number>50</number>
             </property>
             <property name="maximum">
-             <number>10000</number>
+             <number>20000</number>
             </property>
             <property name="singleStep">
              <number>50</number>
@@ -1276,29 +1277,58 @@
       <number>4</number>
      </property>
      <item>
-      <widget class="QPushButton" name="streamButton">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>150</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="text">
-        <string>Basic.Main.StartStreaming</string>
-       </property>
-       <property name="checkable">
-        <bool>true</bool>
-       </property>
-      </widget>
+      <layout class="QHBoxLayout" name="horizontalLayout_7">
+       <item>
+        <widget class="QPushButton" name="streamButton">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>150</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Basic.Main.StartStreaming</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="broadcastButton">
+         <property name="enabled">
+          <bool>true</bool>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Ignored" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>150</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>Basic.Main.StartBroadcast</string>
+         </property>
+         <property name="checkable">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
      <item>
       <layout class="QHBoxLayout" name="recordingLayout">
@@ -1775,6 +1805,11 @@
     <string>Export</string>
    </property>
   </action>
+  <action name="actionShowMissingFiles">
+   <property name="text">
+    <string>Basic.MainMenu.File.ShowMissingFiles</string>
+   </property>
+  </action>
   <action name="actionNewProfile">
    <property name="text">
     <string>New</string>
@@ -2032,6 +2067,22 @@
    </property>
    <property name="text">
     <string>Basic.MainMenu.View.ContextBar</string>
+   </property>
+  </action>
+  <action name="actionMainUndo">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Undo.Undo</string>
+   </property>
+  </action>
+  <action name="actionMainRedo">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Undo.Redo</string>
    </property>
   </action>
  </widget>

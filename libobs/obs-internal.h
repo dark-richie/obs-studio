@@ -330,7 +330,7 @@ struct obs_core_audio {
 
 	uint64_t buffered_ts;
 	struct circlebuf buffered_timestamps;
-	int buffering_wait_ticks;
+	uint64_t buffering_wait_ticks;
 	int total_buffering_ticks;
 
 	float user_volume;
@@ -621,11 +621,17 @@ struct obs_source {
 	 * to handle things but it's the best option) */
 	bool removed;
 
+	/*  used to indicate if the source should show up when queried for user ui */
+	bool temp_removed;
+
 	bool active;
 	bool showing;
 
 	/* used to temporarily disable sources if needed */
 	bool enabled;
+
+	/* hint to allow sources to render more quickly */
+	bool texcoords_centered;
 
 	/* timing (if video is present, is based upon video) */
 	volatile bool timing_set;
@@ -682,6 +688,7 @@ struct obs_source {
 	int async_channel_count;
 	long async_rotation;
 	bool async_flip;
+	bool async_linear_alpha;
 	bool async_active;
 	bool async_update_texture;
 	bool async_unbuffered;
@@ -843,6 +850,8 @@ convert_video_format(enum video_format format)
 	}
 }
 
+extern void obs_source_set_texcoords_centered(obs_source_t *source,
+					      bool centered);
 extern void obs_source_activate(obs_source_t *source, enum view_type type);
 extern void obs_source_deactivate(obs_source_t *source, enum view_type type);
 extern void obs_source_video_tick(obs_source_t *source, float seconds);
