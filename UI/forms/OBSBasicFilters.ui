@@ -69,9 +69,6 @@
             <property name="contextMenuPolicy">
              <enum>Qt::CustomContextMenu</enum>
             </property>
-            <property name="spacing">
-             <number>1</number>
-            </property>
             <property name="dragEnabled">
              <bool>true</bool>
             </property>
@@ -80,6 +77,9 @@
             </property>
             <property name="defaultDropAction">
              <enum>Qt::TargetMoveAction</enum>
+            </property>
+            <property name="spacing">
+             <number>1</number>
             </property>
            </widget>
           </item>
@@ -116,7 +116,7 @@
                 <string notr="true"/>
                </property>
                <property name="icon">
-                <iconset>
+                <iconset resource="obs.qrc">
                  <normaloff>:/res/images/plus.svg</normaloff>:/res/images/plus.svg</iconset>
                </property>
                <property name="autoDefault">
@@ -125,8 +125,11 @@
                <property name="flat">
                 <bool>true</bool>
                </property>
-               <property name="themeID" stdset="0">
-                <string>addIconSmall</string>
+               <property name="class" stdset="0">
+                <string>icon-plus</string>
+               </property>
+               <property name="toolButton" stdset="0">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -145,7 +148,7 @@
                 <string notr="true"/>
                </property>
                <property name="icon">
-                <iconset>
+                <iconset resource="obs.qrc">
                  <normaloff>:/res/images/minus.svg</normaloff>:/res/images/minus.svg</iconset>
                </property>
                <property name="autoDefault">
@@ -154,8 +157,11 @@
                <property name="flat">
                 <bool>true</bool>
                </property>
-               <property name="themeID" stdset="0">
-                <string>removeIconSmall</string>
+               <property name="class" stdset="0">
+                <string>icon-trash</string>
+               </property>
+               <property name="toolButton" stdset="0">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -174,7 +180,7 @@
                 <string notr="true"/>
                </property>
                <property name="icon">
-                <iconset>
+                <iconset resource="obs.qrc">
                  <normaloff>:/res/images/up.svg</normaloff>:/res/images/up.svg</iconset>
                </property>
                <property name="autoDefault">
@@ -183,8 +189,11 @@
                <property name="flat">
                 <bool>true</bool>
                </property>
-               <property name="themeID" stdset="0">
-                <string>upArrowIconSmall</string>
+               <property name="class" stdset="0">
+                <string>icon-up</string>
+               </property>
+               <property name="toolButton" stdset="0">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -203,7 +212,7 @@
                 <string notr="true"/>
                </property>
                <property name="icon">
-                <iconset>
+                <iconset resource="obs.qrc">
                  <normaloff>:/res/images/down.svg</normaloff>:/res/images/down.svg</iconset>
                </property>
                <property name="autoDefault">
@@ -212,8 +221,11 @@
                <property name="flat">
                 <bool>true</bool>
                </property>
-               <property name="themeID" stdset="0">
-                <string>downArrowIconSmall</string>
+               <property name="class" stdset="0">
+                <string>icon-down</string>
+               </property>
+               <property name="toolButton" stdset="0">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -291,9 +303,6 @@
             <property name="contextMenuPolicy">
              <enum>Qt::CustomContextMenu</enum>
             </property>
-            <property name="spacing">
-             <number>1</number>
-            </property>
             <property name="dragEnabled">
              <bool>true</bool>
             </property>
@@ -302,6 +311,9 @@
             </property>
             <property name="defaultDropAction">
              <enum>Qt::TargetMoveAction</enum>
+            </property>
+            <property name="spacing">
+             <number>1</number>
             </property>
            </widget>
           </item>
@@ -338,7 +350,7 @@
                 <string notr="true"/>
                </property>
                <property name="icon">
-                <iconset>
+                <iconset resource="obs.qrc">
                  <normaloff>:/res/images/plus.svg</normaloff>:/res/images/plus.svg</iconset>
                </property>
                <property name="autoDefault">
@@ -347,8 +359,11 @@
                <property name="flat">
                 <bool>true</bool>
                </property>
-               <property name="themeID" stdset="0">
-                <string>addIconSmall</string>
+               <property name="class" stdset="0">
+                <string>icon-plus</string>
+               </property>
+               <property name="toolButton" stdset="0">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -367,7 +382,7 @@
                 <string notr="true"/>
                </property>
                <property name="icon">
-                <iconset>
+                <iconset resource="obs.qrc">
                  <normaloff>:/res/images/minus.svg</normaloff>:/res/images/minus.svg</iconset>
                </property>
                <property name="autoDefault">
@@ -376,8 +391,11 @@
                <property name="flat">
                 <bool>true</bool>
                </property>
-               <property name="themeID" stdset="0">
-                <string>removeIconSmall</string>
+               <property name="class" stdset="0">
+                <string>icon-trash</string>
+               </property>
+               <property name="toolButton" stdset="0">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -396,7 +414,7 @@
                 <string notr="true"/>
                </property>
                <property name="icon">
-                <iconset>
+                <iconset resource="obs.qrc">
                  <normaloff>:/res/images/up.svg</normaloff>:/res/images/up.svg</iconset>
                </property>
                <property name="autoDefault">
@@ -405,8 +423,11 @@
                <property name="flat">
                 <bool>true</bool>
                </property>
-               <property name="themeID" stdset="0">
-                <string>upArrowIconSmall</string>
+               <property name="class" stdset="0">
+                <string>icon-up</string>
+               </property>
+               <property name="toolButton" stdset="0">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -425,7 +446,7 @@
                 <string notr="true"/>
                </property>
                <property name="icon">
-                <iconset>
+                <iconset resource="obs.qrc">
                  <normaloff>:/res/images/down.svg</normaloff>:/res/images/down.svg</iconset>
                </property>
                <property name="autoDefault">
@@ -434,8 +455,11 @@
                <property name="flat">
                 <bool>true</bool>
                </property>
-               <property name="themeID" stdset="0">
-                <string>downArrowIconSmall</string>
+               <property name="class" stdset="0">
+                <string>icon-down</string>
+               </property>
+               <property name="toolButton" stdset="0">
+                <bool>true</bool>
                </property>
               </widget>
              </item>
@@ -606,7 +630,7 @@
   </layout>
   <action name="actionRemoveFilter">
    <property name="icon">
-    <iconset>
+    <iconset resource="obs.qrc">
      <normaloff>:/res/images/minus.svg</normaloff>:/res/images/minus.svg</iconset>
    </property>
    <property name="text">
@@ -621,7 +645,7 @@
   </action>
   <action name="actionMoveUp">
    <property name="icon">
-    <iconset>
+    <iconset resource="obs.qrc">
      <normaloff>:/res/images/up.svg</normaloff>:/res/images/up.svg</iconset>
    </property>
    <property name="text">
@@ -633,7 +657,7 @@
   </action>
   <action name="actionMoveDown">
    <property name="icon">
-    <iconset>
+    <iconset resource="obs.qrc">
      <normaloff>:/res/images/down.svg</normaloff>:/res/images/down.svg</iconset>
    </property>
    <property name="text">

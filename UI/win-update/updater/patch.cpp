@@ -16,7 +16,6 @@
 
 #include "updater.hpp"
 
-#include <stdint.h>
 #include <vector>
 
 using namespace std;
@@ -55,8 +54,7 @@ constexpr const char *kDeltaMagic = "BOUF//ZSTD//DICT";
 constexpr int kMagicSize = 16;
 constexpr int kHeaderSize = kMagicSize + 8; // magic + int64_t delta size
 
-int ApplyPatch(ZSTD_DCtx *zstdCtx, std::byte *patch_data,
-	       const size_t patch_size, const wchar_t *targetFile)
+int ApplyPatch(ZSTD_DCtx *zstdCtx, const std::byte *patch_data, const size_t patch_size, const wchar_t *targetFile)
 try {
 	int64_t newsize;
 	bool success;
@@ -66,15 +64,14 @@ try {
 	/* --------------------------------- *
 	 * open patch and file to patch      */
 
-	hTarget = CreateFile(targetFile, GENERIC_READ, 0, nullptr,
-			     OPEN_EXISTING, 0, nullptr);
+	hTarget = CreateFile(targetFile, GENERIC_READ, 0, nullptr, OPEN_EXISTING, 0, nullptr);
 	if (!hTarget.Valid())
 		throw int(GetLastError());
 
 	/* --------------------------------- *
 	 * read patch header                 */
 
-	if (memcmp(patch_data, kDeltaMagic, kMagicSize))
+	if (memcmp(patch_data, kDeltaMagic, kMagicSize) != 0)
 		throw int(-4);
 
 	/* --------------------------------- *
@@ -108,7 +105,7 @@ try {
 		throw int(-1);
 	}
 
-	if (!ReadFile(hTarget, &oldData[0], oldFileSize, &read, nullptr))
+	if (!ReadFile(hTarget, oldData.data(), oldFileSize, &read, nullptr))
 		throw int(GetLastError());
 	if (read != oldFileSize)
 		throw int(-1);
@@ -116,9 +113,8 @@ try {
 	/* --------------------------------- *
 	 * patch to new file data            */
 
-	size_t result = ZSTD_decompress_usingDict(
-		zstdCtx, &newData[0], newData.size(), patch_data + kHeaderSize,
-		patch_size - kHeaderSize, oldData.data(), oldData.size());
+	size_t result = ZSTD_decompress_usingDict(zstdCtx, newData.data(), newData.size(), patch_data + kHeaderSize,
+						  patch_size - kHeaderSize, oldData.data(), oldData.size());
 
 	if (result != newsize || ZSTD_isError(result))
 		throw int(-9);
@@ -127,15 +123,13 @@ try {
 	 * write new file                    */
 
 	hTarget = nullptr;
-	hTarget = CreateFile(targetFile, GENERIC_WRITE, 0, nullptr,
-			     CREATE_ALWAYS, 0, nullptr);
+	hTarget = CreateFile(targetFile, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, 0, nullptr);
 	if (!hTarget.Valid())
 		throw int(GetLastError());
 
 	DWORD written;
 
-	success = !!WriteFile(hTarget, newData.data(), (DWORD)newsize, &written,
-			      nullptr);
+	success = !!WriteFile(hTarget, newData.data(), (DWORD)newsize, &written, nullptr);
 	if (!success || written != newsize)
 		throw int(GetLastError());
 
